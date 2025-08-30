@@ -70,12 +70,3 @@ fun NormalGraph(data: List<Pair<Float, Float>>, modifier : Modifier = Modifier )
         }
     }
 }
-
-@Composable
-fun PainGraph(data: MutableList<Pair<Long, Float>>, modifier : Modifier = Modifier) {
-    var normalData = mutableListOf<Pair<Float, Float>>()
-    for (i in 0..(data.size-1)) {
-        normalData.add(Pair(data[i].first.toFloat(), data[i].second))
-    }
-    NormalGraph(normalData, modifier)
-}
