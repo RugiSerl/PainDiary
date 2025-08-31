@@ -1,13 +1,11 @@
 package com.rugiserl.paindiary
 
+import android.icu.util.Calendar
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,8 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 
+
 data class GraphDataState(
-    val data: List<Pair<Float, Float>> = listOf<Pair<Float, Float>>(),
+    val data: List<Pair<Calendar, Float>> = listOf<Pair<Calendar, Float>>(),
 )
 
 class GraphDataViewModel : ViewModel() {
@@ -31,7 +30,7 @@ class GraphDataViewModel : ViewModel() {
     val uiState: StateFlow<GraphDataState> = _uiState.asStateFlow()
 
     // Handle business logic
-    fun addElement(point: Pair<Float, Float>) {
+    fun addElement(point: Pair<Calendar, Float>) {
         _uiState.update { currentState ->
             currentState.copy(
                 data = currentState.data + point
@@ -94,4 +93,57 @@ fun NormalGraph(data: List<Pair<Float, Float>>, graphColor: Color, modifier : Mo
 
     }
 
+}
+
+@Composable
+fun DayGraph(data: List<Pair<Calendar, Float>>, graphColor: Color, modifier : Modifier) {
+    Card (
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+    ){
+        Canvas(
+            modifier = modifier
+        ) {
+            if (!data.isEmpty()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val msInADay: Float = 1000.0f * 60.0f * 60.0f * 24.0f
+
+                for (i in 0..(data.size-2)) {
+                    if (data[i].first.get(Calendar.DATE) == Calendar.getInstance().get(Calendar.DATE)) {
+                        println(data[i].first.get(Calendar.MILLISECONDS_IN_DAY).toFloat()/msInADay)
+                        val start = Offset(x = data[i].first.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (data[i].second)/10*canvasHeight)
+                        val end = Offset(x = data[i+1].first.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (data[i+1].second)/10*canvasHeight)
+                        drawLine(
+                            start = start,
+                            end = end,
+                            color = graphColor,
+                            strokeWidth = 5.dp.toPx()
+                        )
+                        drawCircle(
+                            color = graphColor,
+                            radius = 5.dp.toPx(),
+                            center = start
+                        )
+                        if (i==data.size-2) {
+                            drawCircle(
+                                color = graphColor,
+                                radius = 5.dp.toPx(),
+                                center = end
+                            )
+                        }
+
+
+                    }
+
+                }
+            }
+        }
+
+
+    }
 }

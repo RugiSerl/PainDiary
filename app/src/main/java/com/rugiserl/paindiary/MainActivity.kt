@@ -2,6 +2,7 @@ package com.rugiserl.paindiary
 
 import android.app.Activity
 import android.content.Intent
+import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -122,13 +123,13 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel()) {
             ) {
 
                 Text(
-                    text = "Your average pain today is "+viewModel.getAverage().toString(),
+                    text = "Your average pain today is "+viewModel.getAverage().roundToInt().toString(),
                     fontSize = 20.sp,
                     modifier = Modifier
                         .padding(10.dp)
                 )
 
-                NormalGraph(
+                DayGraph(
                     data = uiState.data,
                     graphColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
@@ -211,8 +212,8 @@ fun AddEntryDialog(onDismissRequest: () -> Unit, viewModel: GraphDataViewModel =
                 ){
                     TextButton(
                         onClick = {
-                            viewModel.addElement (Pair<Float, Float> (
-                                first = (System.currentTimeMillis()%31557600).toFloat(),
+                            viewModel.addElement (Pair<Calendar, Float> (
+                                first = Calendar.getInstance(),
                                 second = entryToAdd
                             ))
                             onDismissRequest()
