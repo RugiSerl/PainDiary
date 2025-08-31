@@ -1,12 +1,16 @@
 package com.rugiserl.paindiary
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -14,9 +18,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.time.LocalDate
-import java.util.Calendar
-import kotlin.Int
 
 
 data class GraphDataState(
@@ -37,36 +38,60 @@ class GraphDataViewModel : ViewModel() {
             )
         }
     }
+
+    fun getAverage(): Double {
+        if (_uiState.value.data.isNotEmpty()) { // avoid division by 0
+            return _uiState.value.data.sumOf {it.second.toDouble()} / _uiState.value.data.size
+        } else {
+            return 0.0
+        }
+    }
 }
 
 
 @Composable
-fun NormalGraph(data: List<Pair<Float, Float>>, modifier : Modifier = Modifier ) {
-    if (data.isEmpty()) return
-    Canvas(modifier = modifier) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
+fun NormalGraph(data: List<Pair<Float, Float>>, graphColor: Color, modifier : Modifier = Modifier) {
 
-        val sorted = data.sortedBy { it.first }
-        val width = sorted.last().first - sorted.first().first
-        val xOffset = sorted.first().first
-        val min = sorted.minBy { it.second }
-        val max = sorted.maxBy { it.second }
+    Card (
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+    ){
+            Canvas(
+                modifier = modifier
+            ) {
+                if (!data.isEmpty()) {
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
 
-        for (i in 0..(data.size-2)) {
-            val start = Offset(x = (sorted[i].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i].second - min.second)/(max.second-min.second)*canvasHeight)
-            val end = Offset(x = (sorted[i+1].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i+1].second - min.second)/(max.second-min.second)*canvasHeight)
-            drawLine(
-                start = start,
-                end = end,
-                color = Color.Blue,
-                strokeWidth = 5.dp.toPx()
-            )
-            drawCircle(
-                color = Color.Blue,
-                radius = 5.dp.toPx(),
-                center = end
-            )
-        }
+                    val sorted = data.sortedBy { it.first }
+                    val width = sorted.last().first - sorted.first().first
+                    val xOffset = sorted.first().first
+                    val min = sorted.minBy { it.second }
+                    val max = sorted.maxBy { it.second }
+
+                    for (i in 0..(data.size-2)) {
+                        val start = Offset(x = (sorted[i].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i].second - min.second)/(max.second-min.second)*canvasHeight)
+                        val end = Offset(x = (sorted[i+1].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i+1].second - min.second)/(max.second-min.second)*canvasHeight)
+                        drawLine(
+                            start = start,
+                            end = end,
+                            color = graphColor,
+                            strokeWidth = 5.dp.toPx()
+                        )
+                        drawCircle(
+                            color = graphColor,
+                            radius = 5.dp.toPx(),
+                            center = end
+                        )
+                    }
+                }
+
+            }
+
     }
+
 }
