@@ -87,7 +87,6 @@ abstract class AppDatabase : RoomDatabase() {
  * Row of the table
  */
 data class GraphDataState(
-    val data: List<Pair<Calendar, Float>> = listOf<Pair<Calendar, Float>>(),
     var db: AppDatabase
 )
 
@@ -110,12 +109,6 @@ class GraphDataViewModel(
 
 
     fun addElement(point: Pair<Calendar, Float>) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                data = currentState.data + point,
-            )
-
-        }
         _uiState.value.db.userDao().insertAll(
             GraphEntry(
                 date = point.first,
@@ -125,8 +118,8 @@ class GraphDataViewModel(
     }
 
     fun getAverage(): Double {
-        if (_uiState.value.data.isNotEmpty()) { // avoid division by 0
-            return _uiState.value.data.sumOf {it.second.toDouble()} / _uiState.value.data.size
+        if (!_uiState.value.db.userDao().getAll().isEmpty()) { // avoid division by 0
+            return _uiState.value.db.userDao().getAll().sumOf {it.painLevel.toDouble()} / _uiState.value.db.userDao().getAll().size
         } else {
             return 0.0
         }

@@ -2,6 +2,7 @@ package com.rugiserl.paindiary
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Paint
 import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -36,7 +37,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +58,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.room.util.TableInfo
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -115,18 +117,23 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
         Box (
             modifier = Modifier.padding(innerPadding)
         ) {
+
+            Column (
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize()
+            ){
+                Text(
+                    text = "Your average pain today is "+viewModel.getAverage().roundToInt().toString(),
+                    fontSize = 20.sp,
+                    modifier = Modifier
+                        .padding(20.dp)
+                )
+            }
             Column (
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
-
-                Text(
-                    text = "Your average pain today is "+viewModel.getAverage().roundToInt().toString(),
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(10.dp)
-                )
 
                 DayGraph(
                     data = uiState.db.userDao().getAll(),
