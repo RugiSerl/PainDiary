@@ -8,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +51,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
@@ -64,8 +64,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val viewModel: GraphDataViewModel by viewModels()
-
+        val viewModel: GraphDataViewModel = GraphDataViewModel(baseContext)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect {
@@ -84,7 +83,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun App(viewModel: GraphDataViewModel = GraphDataViewModel()) {
+fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle() // allow storing of the data even when the device is rotating
     val activity = LocalActivity.current as Activity
     var addingEntry by remember { mutableStateOf(false) }
@@ -130,7 +129,7 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel()) {
                 )
 
                 DayGraph(
-                    data = uiState.data,
+                    data = uiState.db.userDao().getAll(),
                     graphColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .height(300.dp)
@@ -173,9 +172,9 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel()) {
 }
 
 @Composable
-fun AddEntryDialog(onDismissRequest: () -> Unit, viewModel: GraphDataViewModel = GraphDataViewModel()) {
+fun AddEntryDialog(onDismissRequest: () -> Unit, viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)) {
     var entryToAdd by rememberSaveable {mutableStateOf(0.0f)}
-    val sliderColor = mixColors(Color.Red, Color.Green, entryToAdd/10.0f)
+    val sliderColor = getGreenRedGradient(entryToAdd)
     Dialog(
         onDismissRequest = onDismissRequest
     ) {
