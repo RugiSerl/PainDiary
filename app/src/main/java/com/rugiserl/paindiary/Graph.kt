@@ -28,7 +28,6 @@ import androidx.room.TypeConverters
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import java.sql.Date
 
 /**
@@ -36,20 +35,15 @@ import java.sql.Date
  */
 object CalendarConverter {
     @TypeConverter
-    fun toCalendar(dateLong: Long?): Calendar? {
-         if (dateLong == null) {
-             return null
-         }
-         else {
-             var c = Calendar.getInstance()
-             c.time = Date(dateLong)
-             return c
-         }
+    fun toCalendar(dateLong: Long): Calendar {
+         var c = Calendar.getInstance()
+         c.time = Date(dateLong)
+         return c
     }
 
     @TypeConverter
-    fun fromCalendar(calendar: Calendar?): Long? {
-        return calendar?.time?.time // ugly
+    fun fromCalendar(calendar: Calendar): Long {
+        return calendar.time.time // ugly
     }
 }
 
@@ -117,13 +111,24 @@ class GraphDataViewModel(
         )
     }
 
-    fun getAverage(): Double {
-        if (!_uiState.value.db.userDao().getAll().isEmpty()) { // avoid division by 0
-            return _uiState.value.db.userDao().getAll().sumOf {it.painLevel.toDouble()} / _uiState.value.db.userDao().getAll().size
-        } else {
-            return 0.0
+
+    fun getAverageByDate(day: Int = Calendar.getInstance().get(Calendar.DATE)): Double {
+        var list = _uiState.value.db.userDao().getAll()
+        var sum: Double = 0.0
+        var elementCountToday: Int = 0
+        for (e: GraphEntry in list) {
+            if (e.date.get(Calendar.DATE) == day) {
+                sum += e.painLevel
+                elementCountToday++
+            }
+        }
+        return if (elementCountToday>0) {
+            sum / elementCountToday
+        } else  {
+            0.0
         }
     }
+
 
 }
 
@@ -185,33 +190,41 @@ fun DayGraph(data: List<GraphEntry>, graphColor: Color, modifier : Modifier) {
             .fillMaxWidth()
             .padding(10.dp)
     ){
+
+
         Canvas(
             modifier = modifier
         ) {
-            if (!data.isEmpty()) {
+            var todayData = data.filter { it.date.get(Calendar.DATE) == Calendar.getInstance().get(Calendar.DATE) } .sortedBy { it.date.get(Calendar.MILLISECONDS_IN_DAY) }
+            if (!todayData.isEmpty()) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height
                 val msInADay: Float = 1000.0f * 60.0f * 60.0f * 24.0f
 
-                for (i in 0..(data.size-2)) {
-                    if (data[i].date.get(Calendar.DATE) == Calendar.getInstance().get(Calendar.DATE)) {
-                        println(data[i].date.get(Calendar.MILLISECONDS_IN_DAY).toFloat()/msInADay)
-                        val start = Offset(x = data[i].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (data[i].painLevel)/10*canvasHeight)
-                        val end = Offset(x = data[i+1].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (data[i+1].painLevel)/10*canvasHeight)
+
+                // Draw the initial circle
+                drawCircle(
+                    color = graphColor,
+                    radius = 5.dp.toPx(),
+                    center = Offset(x = todayData[0].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[0].painLevel)/10*canvasHeight)
+                )
+
+                for (i in 0..(todayData.size-2)) {
+                        println(todayData[i].date.get(Calendar.MILLISECONDS_IN_DAY).toFloat()/msInADay)
+                        val start = Offset(x = todayData[i].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[i].painLevel)/10*canvasHeight)
+                        val end = Offset(x = todayData[i+1].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[i+1].painLevel)/10*canvasHeight)
                         drawLine(
                             start = start,
                             end = end,
                             color = graphColor,
                             strokeWidth = 5.dp.toPx()
                         )
+                        // Draw the end of every segment. The initial circle is already drowned earlier.
                         drawCircle(
                             color = graphColor,
                             radius = 5.dp.toPx(),
-                            center = start
+                            center = end
                         )
-
-
-                    }
 
                 }
             }

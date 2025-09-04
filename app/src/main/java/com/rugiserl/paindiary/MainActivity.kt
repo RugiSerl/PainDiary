@@ -2,7 +2,6 @@ package com.rugiserl.paindiary
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Paint
 import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -45,14 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rugiserl.paindiary.ui.theme.PainDiaryTheme
-import kotlin.random.Random
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -60,7 +57,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.room.util.TableInfo
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -98,22 +94,8 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
                 title = { Text("Pain diary") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                actions = {
-                    IconButton(
-                        onClick = {
-                            activity.startActivity(Intent(activity, SettingActivity::class.java))
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "settings"
-                        )
-                    }
-                }
+                )
             )
-
-
         }
     ) {innerPadding ->
         Box (
@@ -125,7 +107,7 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
                 modifier = Modifier.fillMaxSize()
             ){
                 Text(
-                    text = "Your average pain today is "+viewModel.getAverage().roundToInt().toString(),
+                    text = "Your average pain today is "+viewModel.getAverageByDate().roundToInt().toString(),
                     fontSize = 20.sp,
                     modifier = Modifier
                         .padding(20.dp)
@@ -150,7 +132,7 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
                 Row {
                     MainMenuButton(
                         onClick = {
-
+                            activity.startActivity(Intent(activity, StatsActivity::class.java))
                         },
                         imageVector = Icons.AutoMirrored.Filled.List,
                         text = "View stats",

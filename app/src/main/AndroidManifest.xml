@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PainDiary"
         tools:targetApi="31">
-        <activity android:name=".SettingActivity" />
+        <activity android:name=".StatsActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
