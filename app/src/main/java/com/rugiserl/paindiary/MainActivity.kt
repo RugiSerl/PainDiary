@@ -22,13 +22,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -41,10 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rugiserl.paindiary.ui.theme.PainDiaryTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,7 +61,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val viewModel: GraphDataViewModel = GraphDataViewModel(baseContext)
+        val viewModel = GraphDataViewModel(baseContext)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect {
@@ -80,11 +77,11 @@ class MainActivity : ComponentActivity() {
 
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle() // allow storing of the data even when the device is rotating
     val activity = LocalActivity.current as Activity
     var addingEntry by remember { mutableStateOf(false) }
     Scaffold(
@@ -97,38 +94,27 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
                 )
             )
         }
-    ) {innerPadding ->
-        Box (
+    ) { innerPadding ->
+        Box(
             modifier = Modifier.padding(innerPadding)
         ) {
-
-            Column (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize()
-            ){
-                Text(
-                    text = "Your average pain today is "+viewModel.getAverageByDate().roundToInt().toString(),
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(20.dp)
-                )
-            }
-            Column (
+            Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
 
                 DayGraph(
-                    data = uiState.db.userDao().getAll(),
+                    data = viewModel.getAllEntries(),
                     graphColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .height(300.dp)
                         .fillMaxWidth()
                         .padding(50.dp),
 
-                )
+                    )
                 Row {
                     MainMenuButton(
                         onClick = {
@@ -164,49 +150,54 @@ fun App(viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
 }
 
 @Composable
-fun AddEntryDialog(onDismissRequest: () -> Unit, viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)) {
-    var entryToAdd by rememberSaveable {mutableStateOf(0.0f)}
+fun AddEntryDialog(
+    onDismissRequest: () -> Unit,
+    viewModel: GraphDataViewModel = GraphDataViewModel(LocalContext.current)
+) {
+    var entryToAdd by rememberSaveable { mutableFloatStateOf(0.0f) }
     val sliderColor = getGreenRedGradient(entryToAdd)
     Dialog(
         onDismissRequest = onDismissRequest
     ) {
-        Card (
+        Card(
             modifier = Modifier
                 .requiredSize(300.dp, 200.dp)
         ) {
-            Column (
+            Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(20.dp)
                     .fillMaxSize()
             ) {
                 Text(
-                    text = "How would you rate your pain from 0 to 10 ?",
+                    text = "How would you rate your pain on a scale from 0 to 10 ?",
                     textAlign = TextAlign.Center
                 )
                 Slider(
                     value = entryToAdd,
                     valueRange = 0.0f..10.0f,
                     steps = 9,
-                    onValueChange = {entryToAdd = it},
+                    onValueChange = { entryToAdd = it },
                     colors = SliderDefaults.colors(
                         thumbColor = sliderColor,
                         activeTrackColor = sliderColor,
                         inactiveTickColor = sliderColor
                     )
                 )
-                Text(entryToAdd.roundToInt().toString()+"/10")
-                Row (
+                Text(entryToAdd.roundToInt().toString() + "/10")
+                Row(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier
                         .fillMaxSize()
-                ){
+                ) {
                     TextButton(
                         onClick = {
-                            viewModel.addElement (Pair<Calendar, Float> (
-                                first = Calendar.getInstance(),
-                                second = entryToAdd
-                            ))
+                            viewModel.addElement(
+                                Pair<Calendar, Float>(
+                                    first = Calendar.getInstance(),
+                                    second = entryToAdd
+                                )
+                            )
                             onDismissRequest()
                         }
                     ) {
@@ -220,27 +211,27 @@ fun AddEntryDialog(onDismissRequest: () -> Unit, viewModel: GraphDataViewModel =
 
 @Composable
 fun MainMenuButton(onClick: () -> Unit, imageVector: ImageVector, text: String, tonal: Boolean) {
-    val content = @Composable{
-        Column (
+    val content = @Composable {
+        Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector =  imageVector,
+                imageVector = imageVector,
                 contentDescription = text
             )
             Text(text)
         }
     }
     if (tonal) {
-        FilledTonalButton (
+        FilledTonalButton(
             onClick = onClick,
             modifier = Modifier
                 .padding(10.dp)
-        ){
+        ) {
             content()
         }
     } else {
-        Button (
+        Button(
             onClick = onClick,
             modifier = Modifier
                 .padding(10.dp)
@@ -248,7 +239,6 @@ fun MainMenuButton(onClick: () -> Unit, imageVector: ImageVector, text: String, 
             content()
         }
     }
-
 
 
 }

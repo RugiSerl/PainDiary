@@ -3,11 +3,13 @@ package com.rugiserl.paindiary
 import android.content.Context
 import android.icu.util.Calendar
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -36,9 +38,9 @@ import java.sql.Date
 object CalendarConverter {
     @TypeConverter
     fun toCalendar(dateLong: Long): Calendar {
-         var c = Calendar.getInstance()
-         c.time = Date(dateLong)
-         return c
+        var c = Calendar.getInstance()
+        c.time = Date(dateLong)
+        return c
     }
 
     @TypeConverter
@@ -93,12 +95,14 @@ class GraphDataViewModel(
 
 
     // Expose screen UI state
-    private val _uiState = MutableStateFlow(GraphDataState(
-        db = Room.databaseBuilder(
-            context = context,
-            AppDatabase::class.java, "painGraph"
-        ).allowMainThreadQueries().build()
-    ))
+    private val _uiState = MutableStateFlow(
+        GraphDataState(
+            db = Room.databaseBuilder(
+                context = context,
+                AppDatabase::class.java, "painGraph"
+            ).allowMainThreadQueries().build()
+        )
+    )
     val uiState: StateFlow<GraphDataState> = _uiState.asStateFlow()
 
 
@@ -111,108 +115,87 @@ class GraphDataViewModel(
         )
     }
 
+    fun getAllEntries(): List<GraphEntry> {
+        return _uiState.value.db.userDao().getAll()
+    }
 
-    fun getAverageByDate(day: Int = Calendar.getInstance().get(Calendar.DATE)): Double {
-        var list = _uiState.value.db.userDao().getAll()
-        var sum: Double = 0.0
-        var elementCountToday: Int = 0
-        for (e: GraphEntry in list) {
-            if (e.date.get(Calendar.DATE) == day) {
-                sum += e.painLevel
-                elementCountToday++
-            }
+
+    fun getAverageByDate(day: Calendar = Calendar.getInstance()): Double {
+        var filteredList = getAllEntries().filter {
+            it.date.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR) && it.date.get(
+                Calendar.YEAR
+            ) == day.get(Calendar.YEAR)
         }
-        return if (elementCountToday>0) {
-            sum / elementCountToday
-        } else  {
+        return if (filteredList.isNotEmpty()) {
+            filteredList.sumOf { it.painLevel.toDouble() } / filteredList.size
+        } else {
             0.0
         }
     }
 
-
+    fun getAverageByMonth(day: Calendar = Calendar.getInstance()): Double {
+        var filteredList = getAllEntries().filter {
+            it.date.get(Calendar.MONTH) == day.get(Calendar.MONTH) && it.date.get(Calendar.YEAR) == day.get(
+                Calendar.YEAR
+            )
+        }
+        return if (filteredList.isNotEmpty()) {
+            filteredList.sumOf { it.painLevel.toDouble() } / filteredList.size
+        } else {
+            0.0
+        }
+    }
 }
 
-
 @Composable
-fun NormalGraph(data: List<Pair<Float, Float>>, graphColor: Color, modifier : Modifier = Modifier) {
-
-    Card (
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp
-        ),
+fun DayGraph(data: List<GraphEntry>, graphColor: Color, modifier: Modifier) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(10.dp)
-    ){
+    ) {
+        Column {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp)
+            ) {
+                Text(
+                    text = "Today's pain graph"
+                )
+            }
             Canvas(
                 modifier = modifier
             ) {
-                if (!data.isEmpty()) {
+                var todayData = data.filter {
+                    it.date.get(Calendar.DATE) == Calendar.getInstance().get(Calendar.DATE)
+                }.sortedBy { it.date.get(Calendar.MILLISECONDS_IN_DAY) }
+                if (!todayData.isEmpty()) {
                     val canvasWidth = size.width
                     val canvasHeight = size.height
+                    val msInADay: Float = 1000.0f * 60.0f * 60.0f * 24.0f
 
-                    val sorted = data.sortedBy { it.first }
-                    val width = sorted.last().first - sorted.first().first
-                    val xOffset = sorted.first().first
-                    val min = sorted.minBy { it.second }
-                    val max = sorted.maxBy { it.second }
 
-                    for (i in 0..(data.size-2)) {
-                        val start = Offset(x = (sorted[i].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i].second - min.second)/(max.second-min.second)*canvasHeight)
-                        val end = Offset(x = (sorted[i+1].first-xOffset)/width*canvasWidth, y = canvasHeight - (sorted[i+1].second - min.second)/(max.second-min.second)*canvasHeight)
-                        drawLine(
-                            start = start,
-                            end = end,
-                            color = graphColor,
-                            strokeWidth = 5.dp.toPx()
+                    // Draw the initial circle
+                    drawCircle(
+                        color = graphColor,
+                        radius = 5.dp.toPx(),
+                        center = Offset(
+                            x = todayData[0].date.get(Calendar.MILLISECONDS_IN_DAY) / msInADay * canvasWidth,
+                            y = canvasHeight - (todayData[0].painLevel) / 10 * canvasHeight
                         )
-                        drawCircle(
-                            color = graphColor,
-                            radius = 5.dp.toPx(),
-                            center = end
+                    )
+
+                    for (i in 0..(todayData.size - 2)) {
+                        val start = Offset(
+                            x = todayData[i].date.get(Calendar.MILLISECONDS_IN_DAY) / msInADay * canvasWidth,
+                            y = canvasHeight - (todayData[i].painLevel) / 10 * canvasHeight
                         )
-                    }
-                }
-
-            }
-
-    }
-
-}
-
-@Composable
-fun DayGraph(data: List<GraphEntry>, graphColor: Color, modifier : Modifier) {
-    Card (
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(10.dp)
-    ){
-
-
-        Canvas(
-            modifier = modifier
-        ) {
-            var todayData = data.filter { it.date.get(Calendar.DATE) == Calendar.getInstance().get(Calendar.DATE) } .sortedBy { it.date.get(Calendar.MILLISECONDS_IN_DAY) }
-            if (!todayData.isEmpty()) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                val msInADay: Float = 1000.0f * 60.0f * 60.0f * 24.0f
-
-
-                // Draw the initial circle
-                drawCircle(
-                    color = graphColor,
-                    radius = 5.dp.toPx(),
-                    center = Offset(x = todayData[0].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[0].painLevel)/10*canvasHeight)
-                )
-
-                for (i in 0..(todayData.size-2)) {
-                        println(todayData[i].date.get(Calendar.MILLISECONDS_IN_DAY).toFloat()/msInADay)
-                        val start = Offset(x = todayData[i].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[i].painLevel)/10*canvasHeight)
-                        val end = Offset(x = todayData[i+1].date.get(Calendar.MILLISECONDS_IN_DAY)/msInADay*canvasWidth, y = canvasHeight - (todayData[i+1].painLevel)/10*canvasHeight)
+                        val end = Offset(
+                            x = todayData[i + 1].date.get(Calendar.MILLISECONDS_IN_DAY) / msInADay * canvasWidth,
+                            y = canvasHeight - (todayData[i + 1].painLevel) / 10 * canvasHeight
+                        )
                         drawLine(
                             start = start,
                             end = end,
@@ -226,8 +209,10 @@ fun DayGraph(data: List<GraphEntry>, graphColor: Color, modifier : Modifier) {
                             center = end
                         )
 
+                    }
                 }
             }
+
         }
 
 
